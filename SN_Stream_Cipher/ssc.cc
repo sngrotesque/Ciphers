@@ -34,27 +34,44 @@ static inline void store32_le(uint8_t dst[4], uint32_t w)
 #   endif
 }
 
-static inline void mix(uint32_t &a, uint32_t &b, uint32_t &c, uint32_t &d)
+static inline void rotl128_add(uint32_t &a, uint32_t &b, uint32_t &c, uint32_t &d, uint32_t shift)
 {
-    a ^= ROTL32(b + a, 7);
-    b ^= ROTL32(c ^ b, 13);
-    c ^= ROTL32(d + c, 17);
-    d ^= ROTL32(a ^ d, 3);
+    uint64_t high = (static_cast<uint64_t>(a) << 32) | b;
+    uint64_t low  = (static_cast<uint64_t>(c) << 32) | d;
+
+    shift &= 127;
+    if (shift >= 64) {
+        // 跨 64 位边界的情况
+        uint64_t temp = high;
+        high = low;
+        low = temp;
+        shift -= 64;
+    }
+    if (shift != 0) {
+        uint64_t carry = high >> (64 - shift);
+        high = (high << shift) | (low >> (64 - shift));
+        low = (low << shift) | carry;
+    }
+
+    a += static_cast<uint32_t>(high >> 32);
+    b += static_cast<uint32_t>(high);
+    c += static_cast<uint32_t>(low >> 32);
+    d += static_cast<uint32_t>(low);
 }
 
 static inline void keystream_mixing(uint32_t state[16])
 {
     // Oblique mixing
-    mix(state[0],  state[5],  state[10], state[15]);
-    mix(state[4],  state[9],  state[14], state[3]);
-    mix(state[8],  state[13], state[2],  state[7]);
-    mix(state[12], state[1],  state[6],  state[11]);
+    rotl128_add(state[0],  state[5],  state[10], state[15], 17);
+    rotl128_add(state[4],  state[9],  state[14], state[3], 23);
+    rotl128_add(state[8],  state[13], state[2],  state[7], 71);
+    rotl128_add(state[12], state[1],  state[6],  state[11], 73);
 
     // Vertical mixing
-    mix(state[0],  state[4],  state[8],  state[12]);
-    mix(state[1],  state[5],  state[9],  state[13]);
-    mix(state[2],  state[6], state[10],  state[14]);
-    mix(state[3],  state[7], state[11],  state[15]);
+    rotl128_add(state[0],  state[4],  state[8],  state[12], 41);
+    rotl128_add(state[1],  state[5],  state[9],  state[13], 53);
+    rotl128_add(state[2],  state[6], state[10],  state[14], 31);
+    rotl128_add(state[3],  state[7], state[11],  state[15], 47);
 }
 
 WukSSC::WukSSC(const uint8_t key[WukSSC_KEYLEN], const uint8_t nonce[WukSSC_NONCELEN], uint32_t counter)
@@ -109,40 +126,5 @@ void WukSSC::xcrypt(uint8_t *buffer, size_t length)
         }
 
         buffer[i] ^= ks[ks_i];
-    }
-}
-
-void WukSSC::xcrypt_avx2(uint8_t *buffer, size_t length) {
-    const size_t BLOCK_SIZE = 1024;  // 预生成 16 个密钥块（16×64=1024 字节）
-    uint32_t tmp[16];
-    uint8_t ks[BLOCK_SIZE];
-
-    // 预生成密钥流
-    for (size_t ks_pos = 0; ks_pos < length; ks_pos += BLOCK_SIZE) {
-        size_t block_len = MIN(BLOCK_SIZE, length - ks_pos);
-        
-        // 批量生成密钥流到 ks 缓冲区
-        for (size_t i = 0; i < block_len; i += WukSSC_KSLEN) {
-            memcpy(tmp, this->state, WukSSC_KSLEN);
-            for (uint32_t j = 0; j < 5; ++j) {
-                keystream_mixing(tmp);
-                keystream_mixing(tmp);
-            }
-            memcpy(ks + i, tmp, WukSSC_KSLEN);
-            ++this->state[0];
-        }
-
-        // AVX2 批量加密（一次处理 32 字节）
-        size_t aligned_len = block_len - (block_len & 31);
-        for (size_t i = 0; i < aligned_len; i += 32) {
-            __m256i buf = _mm256_loadu_si256((__m256i*)(buffer + ks_pos + i));
-            __m256i key = _mm256_loadu_si256((__m256i*)(ks + i));
-            _mm256_storeu_si256((__m256i*)(buffer + ks_pos + i), _mm256_xor_si256(buf, key));
-        }
-
-        // 处理尾部（不足 32 字节部分）
-        for (size_t i = aligned_len; i < block_len; ++i) {
-            buffer[ks_pos + i] ^= ks[i];
-        }
     }
 }

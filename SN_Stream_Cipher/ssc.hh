@@ -1,3 +1,4 @@
+#pragma once
 #include <cstdint>
 #include <cstring>
 #include <cstdlib>
@@ -21,7 +22,6 @@ public:
 public:
     void init(const uint8_t key[WukSSC_KEYLEN], const uint8_t nonce[WukSSC_NONCELEN], uint32_t counter = 0);
     void xcrypt(uint8_t *buffer, size_t length);
-    void xcrypt_avx2(uint8_t *buffer, size_t length);
 
     const uint8_t *get_state() const noexcept
     {
