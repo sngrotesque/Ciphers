@@ -82,24 +82,25 @@ void speed_test(size_t length = 1073741824ULL)
 
 void encryption_test()
 {
-    alignas(32) char p[] = "The quick brown fox jumps over the lazy dog. Encrypt me now!!!!!";
+    alignas(32) char p[] = "I'm SN-Grotesque, this is my encryption algorithm.";
     size_t n = sizeof(p) - 1;
     uint8_t *b = (uint8_t *)p;
 
-    uint8_t key[WukSSC_KEYLEN]{2};
-    uint8_t nonce[WukSSC_NONCELEN]{2};
-    uint32_t counter = 0xfffffffe;
+    uint8_t key[WukSSC_KEYLEN]{0};
+    uint8_t nonce[WukSSC_NONCELEN]{1};
+    uint32_t counter = 0;
 
     WukSSC ssc(key, nonce, counter);
 
     ssc.xcrypt(b, n);
 
-    print_hex(b, n, 32, false, false);
+    std::cout << "Ciphertext:" << std::endl;
+    print_hex(b, n, 16, true, true);
 }
 
 int main()
 {
-    // speed_test();
+    speed_test();
     encryption_test();
 
     return 0;
