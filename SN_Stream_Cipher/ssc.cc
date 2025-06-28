@@ -3,85 +3,73 @@
 #ifdef _MSC_VER
 #   define ROTL32(x, n) _rotl(x, n)
 #else
-#   define ROTL32(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+#   define ROTL32(x, n) rotl32(x, n)
+static inline u32 rotl32(u32 x, u32 n)
+{
+    return (x << n) | (x >> (32 - n));
+}
 #endif
 
 #define U32C(x) x##U
 
-static inline uint32_t load32_le(const uint8_t dst[4])
+static inline u32 load32_le(const u8 dst[4])
 {
-    uint32_t w = 0;
+    u32 w = 0;
 #   if WUK_IS_LITTLE_ENDIAN
     memcpy(&w, dst, sizeof w);
 #   else
-    w =  (uint32_t) dst[0];
-    w |= (uint32_t) dst[1] <<  8;
-    w |= (uint32_t) dst[2] << 16;
-    w |= (uint32_t) dst[3] << 24;
+    w =  (u32) dst[0];
+    w |= (u32) dst[1] <<  8;
+    w |= (u32) dst[2] << 16;
+    w |= (u32) dst[3] << 24;
 #   endif
     return w;
 }
 
-static inline void store32_le(uint8_t dst[4], uint32_t w)
+static inline void store32_le(u8 dst[4], u32 w)
 {
 #   if WUK_IS_LITTLE_ENDIAN
     memcpy(dst, &w, sizeof w);
 #   else
-    dst[0] = (uint8_t) w; w >>= 8;
-    dst[1] = (uint8_t) w; w >>= 8;
-    dst[2] = (uint8_t) w; w >>= 8;
-    dst[3] = (uint8_t) w;
+    dst[0] = (u8) w; w >>= 8;
+    dst[1] = (u8) w; w >>= 8;
+    dst[2] = (u8) w; w >>= 8;
+    dst[3] = (u8) w;
 #   endif
 }
 
-static inline void rotl128_add(uint32_t &a, uint32_t &b, uint32_t &c, uint32_t &d, uint32_t shift)
+static inline void rotl128_add(u32 &a, u32 &b, u32 &c, u32 &d, u32 shift)
 {
-    uint64_t high = (static_cast<uint64_t>(a) << 32) | b;
-    uint64_t low  = (static_cast<uint64_t>(c) << 32) | d;
+    u64 high = (static_cast<u64>(a) << 32) | b;
+    u64 low  = (static_cast<u64>(c) << 32) | d;
 
-    shift &= 127;
     if (shift >= 64) {
         // 跨 64 位边界的情况
-        uint64_t temp = high;
+        u64 temp = high;
         high = low;
         low = temp;
         shift -= 64;
     }
     if (shift != 0) {
-        uint64_t carry = high >> (64 - shift);
+        u64 carry = high >> (64 - shift);
         high = (high << shift) | (low >> (64 - shift));
         low = (low << shift) | carry;
     }
 
-    a += static_cast<uint32_t>(high >> 32);
-    b += static_cast<uint32_t>(high);
-    c += static_cast<uint32_t>(low >> 32);
-    d += static_cast<uint32_t>(low);
+    a += static_cast<u32>(high >> 32);
+    b += static_cast<u32>(high);
+    c += static_cast<u32>(low >> 32);
+    d += static_cast<u32>(low);
 }
 
-static inline void keystream_mixing(uint32_t state[16])
-{
-    // Oblique mixing
-    rotl128_add(state[0],  state[5],  state[10], state[15], 17);
-    rotl128_add(state[4],  state[9],  state[14], state[3], 23);
-    rotl128_add(state[8],  state[13], state[2],  state[7], 71);
-    rotl128_add(state[12], state[1],  state[6],  state[11], 73);
-
-    // Vertical mixing
-    rotl128_add(state[0],  state[4],  state[8],  state[12], 41);
-    rotl128_add(state[1],  state[5],  state[9],  state[13], 53);
-    rotl128_add(state[2],  state[6], state[10],  state[14], 31);
-    rotl128_add(state[3],  state[7], state[11],  state[15], 47);
-}
-
-WukSSC::WukSSC(const uint8_t key[WukSSC_KEYLEN], const uint8_t nonce[WukSSC_NONCELEN], uint32_t counter)
+WukSSC::WukSSC(const u8 key[WukSSC_KEYLEN], const u8 nonce[WukSSC_NONCELEN], u32 counter)
 {
     this->init(key, nonce, counter);
 }
 
-void WukSSC::init(const uint8_t key[WukSSC_KEYLEN], const uint8_t nonce[WukSSC_NONCELEN], uint32_t counter)
+void WukSSC::init(const u8 key[WukSSC_KEYLEN], const u8 nonce[WukSSC_NONCELEN], u32 counter)
 {
-    uint8_t count[4]{};
+    u8 count[4]{};
     store32_le(count, counter);
 
     this->state[0]  = load32_le(count);
@@ -104,27 +92,59 @@ void WukSSC::init(const uint8_t key[WukSSC_KEYLEN], const uint8_t nonce[WukSSC_N
     this->state[15] = load32_le(key + 28);
 }
 
-void WukSSC::xcrypt(uint8_t *buffer, size_t length)
+void WukSSC::xcrypt(u8 *ciphertext, const u8 *plaintext, size_t length)
 {
-    uint32_t tmp[16] = {0};
-    uint8_t *ks = (uint8_t *)tmp;
+    u32 tmp[16] = {0};
+    u8 *ks = reinterpret_cast<u8 *>(tmp);
 
+#   ifndef BLOCK_METHOD
     for (size_t i = 0, ks_i = WukSSC_KSLEN; i < length; ++i, ++ks_i) {
         if (ks_i == WukSSC_KSLEN) {
             memcpy(tmp, this->state, WukSSC_KSLEN);
 
             // Update the keystream (10 Rounds of mixing)
-            for (uint32_t j = 0; j < 5; ++j) {
-                keystream_mixing(tmp);
-                keystream_mixing(tmp);
+            for (u32 j = 0; j < 10; ++j) {
+                // Oblique mixing
+                rotl128_add(tmp[0],  tmp[5],  tmp[10], tmp[15], 17);
+                rotl128_add(tmp[4],  tmp[9],  tmp[14], tmp[3],  23);
+                rotl128_add(tmp[8],  tmp[13], tmp[2],  tmp[7],  71);
+                rotl128_add(tmp[12], tmp[1],  tmp[6],  tmp[11], 73);
+                // Vertical mixing
+                rotl128_add(tmp[0],  tmp[4],  tmp[8],  tmp[12], 41);
+                rotl128_add(tmp[1],  tmp[5],  tmp[9],  tmp[13], 53);
+                rotl128_add(tmp[2],  tmp[6], tmp[10],  tmp[14], 31);
+                rotl128_add(tmp[3],  tmp[7], tmp[11],  tmp[15], 47);
             }
-
-            // Update the state for the next keystream generation
-            ++this->state[0];
+            this->state[0]++; // Update the state for the next keystream generation
 
             ks_i = 0;
         }
 
-        buffer[i] ^= ks[ks_i];
+        ciphertext[i] = plaintext[i] ^ ks[ks_i];
     }
+#   else
+    for (size_t i = 0; i < length; i += WukSSC_KSLEN) {
+        memcpy(tmp, this->state, WukSSC_KSLEN);
+
+        // Update the keystream (10 Rounds of mixing)
+        for (u32 j = 0; j < 10; ++j) {
+            // Oblique mixing
+            rotl128_add(tmp[0],  tmp[5],  tmp[10], tmp[15], 17);
+            rotl128_add(tmp[4],  tmp[9],  tmp[14], tmp[3],  23);
+            rotl128_add(tmp[8],  tmp[13], tmp[2],  tmp[7],  71);
+            rotl128_add(tmp[12], tmp[1],  tmp[6],  tmp[11], 73);
+            // Vertical mixing
+            rotl128_add(tmp[0],  tmp[4],  tmp[8],  tmp[12], 41);
+            rotl128_add(tmp[1],  tmp[5],  tmp[9],  tmp[13], 53);
+            rotl128_add(tmp[2],  tmp[6], tmp[10],  tmp[14], 31);
+            rotl128_add(tmp[3],  tmp[7], tmp[11],  tmp[15], 47);
+        }
+
+        for (u32 j = 0; (j < WukSSC_KSLEN) && (i + j < length); ++j) {
+            ciphertext[i + j] = plaintext[i + j] ^ ks[j];
+        }
+
+        this->state[0]++; // Update the state for the next keystream generation
+    }
+#   endif
 }

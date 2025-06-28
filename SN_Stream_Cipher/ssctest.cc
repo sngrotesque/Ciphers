@@ -46,17 +46,6 @@ void print_hex(const uint8_t *data, size_t len, size_t num, bool newline, bool i
     if(newline) printf("\n");
 }
 
-void print_hex(const std::string& label, const uint8_t* data, size_t len) {
-    std::cout << label << ": ";
-    for (size_t i = 0; i < len; ++i) {
-        std::cout << std::hex
-                  << std::setw(2)
-                  << std::setfill('0') 
-                  << static_cast<int>(data[i]) << " ";
-    }
-    std::cout << std::dec << "\n";
-}
-
 static double timer()
 {
     auto now = std::chrono::system_clock::now();
@@ -66,25 +55,39 @@ static double timer()
 
 void speed_test(size_t length = 1073741824ULL)
 {
-    uint8_t zero[64]{};
-    WukSSC ssc(zero, zero, 0);
-    uint8_t *p = new (std::align_val_t(32), std::nothrow) uint8_t[length];
-    double start, stop;
+    uint8_t key[WukSSC_KEYLEN]{0};
+    uint8_t nonce[WukSSC_NONCELEN]{1};
+    uint32_t counter = 0;
+    uint8_t *p = new (std::align_val_t(16), std::nothrow) uint8_t[length];
+    uint8_t *c = new (std::align_val_t(16), std::nothrow) uint8_t[length];
 
-    ssc.xcrypt(p, length);
+    double start, stop, taken_time, throughput;
+    WukSSC ssc(key, nonce, counter);
+
+    ssc.xcrypt(c, p, length);
     start = timer();
-    ssc.xcrypt(p, length);
+    ssc.xcrypt(c, p, length);
     stop = timer();
-    printf("normal version Token time: %.4lf\n", stop-start);
+    taken_time = stop - start;
+    throughput = length / taken_time / (1024 * 1024);
+    printf("normal version Token time: %.4lf\n", taken_time);
+    printf("Speed: %.2lf MB/s.\n", throughput);
 
-    operator delete[] (p, std::align_val_t(32));
+    operator delete[] (p, std::align_val_t(16));
+    operator delete[] (c, std::align_val_t(16));
 }
 
 void encryption_test()
 {
-    alignas(32) char p[] = "I'm SN-Grotesque, this is my encryption algorithm.";
-    size_t n = sizeof(p) - 1;
-    uint8_t *b = (uint8_t *)p;
+    const char p[] = {
+        "I'm SN-Grotesque, this is my encryption algorithm.\n"
+        "It is a stream cipher algorithm that works by mixing "
+        "four words to generate a keystream."
+    };
+    constexpr size_t n = sizeof(p) - 1;
+    uint8_t c[n];
+
+    memcpy(c, p, n);
 
     uint8_t key[WukSSC_KEYLEN]{0};
     uint8_t nonce[WukSSC_NONCELEN]{1};
@@ -92,11 +95,13 @@ void encryption_test()
 
     WukSSC ssc(key, nonce, counter);
 
-    ssc.xcrypt(b, n);
+    ssc.xcrypt(c, (uint8_t *)p, n);
 
-    std::cout << "Ciphertext:" << std::endl;
-    print_hex(b, n, 16, true, true);
+    std::cout << "Plaintext:\t\t\t\t\t\t\tCiphertext:" << std::endl;
+    print_diff_hex((uint8_t *)p, c, n, n, 16, true);
 }
+
+// g++ ssc.cc ssctest.cc -O3 -Wall --std=c++17 -march=native -mtune=native -o ssc.exe && ssc.exe
 
 int main()
 {
