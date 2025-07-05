@@ -3,7 +3,7 @@ import re
 import sys
 import subprocess
 from pathlib import Path
-from git import Repo, GitCommandError
+from git.repo import Repo
 
 # === 配置参数 ===
 DEFAULT_FOLDER = Path('.')
@@ -42,7 +42,7 @@ class GitProcess:
     def ensure_remote(self):
         try:
             self.repo.create_remote('origin', self.remote_url)
-        except GitCommandError:
+        except:
             pass  # 远程已存在
 
     def checkout_version(self):
