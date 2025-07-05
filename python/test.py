@@ -21,7 +21,7 @@ def print_box(data :bytes, num :int, new_line :bool):
     if new_line:
         print()
 
-key = [0x00 for _ in range(32)]
+key = [x for x in range(48)]
 
 # print_box(block, 6, True)
-print_box(key,   8, True)
+print_box(key,   6, True)
