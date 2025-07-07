@@ -123,6 +123,39 @@ SI(void) inv_multiply(u8 state[OP4_BL])
     }
 }
 
+SI(void) xor_with_iv(u8 state[OP4_BL],
+                   const u8 iv[OP4_BL])
+{
+    for (u32 i = 0; i < OP4_BL; ++i) {
+        state[i] ^= iv[i];
+    }
+}
+
+SI(void) xor_with_iv(u8 state[OP4_BL],
+                   const u8 a[OP4_BL],
+                   const u8 b[OP4_BL])
+{
+    for (u32 i = 0; i < OP4_BL; ++i) {
+        state[i] = a[i] ^ b[i];
+    }
+}
+
+// Block cipher mode: OFB
+SI(void) cipher(u8 state[OP4_BL],
+              const u8 round_key[OP4_RKL])
+{
+    for (u32 r = 0; r < OP4_NR; ++r) {
+        const u32 offset = OP4_BL * r;
+
+        shift_bits_add(state);
+        multiply(state);
+
+        for (u32 i = 0; i < OP4_BL; ++i) {
+            state[i] ^= round_key[offset + i];
+        }
+    }
+}
+
 SI(void) cipher(u8 state[OP4_BL],
           const u8 input[OP4_BL],
           const u8 round_key[OP4_RKL])
@@ -238,5 +271,63 @@ void OP4::ecb_decrypt(u8 *plaintext, const u8 *ciphertext, size_t length)
 {
     for (size_t i = 0; i < length; i += OP4_BL) {
         inv_cipher(plaintext + i, ciphertext + i, this->round_key);
+    }
+}
+
+void OP4::cbc_encrypt(u8 *out, const u8 *in,
+                    size_t length, const u8 iv[OP4_BL])
+{
+    u8 buffer[OP4_BL]{0};
+    memcpy(buffer, iv, OP4_BL);
+    
+    for (size_t i = 0; i < length; i += OP4_BL) {
+        xor_with_iv(buffer, in + i);
+        cipher(out + i, buffer, this->round_key);
+        memcpy(buffer, out + i, OP4_BL);
+    }
+}
+
+void OP4::cbc_decrypt(u8 *out, const u8 *in,
+                                      size_t length, const u8 iv[OP4_BL])
+{
+    u8 buffer[OP4_BL]{0}, prev[OP4_BL]{0};
+    memcpy(prev, iv, OP4_BL);
+
+    for (size_t i = 0; i < length; i += OP4_BL) {
+        inv_cipher(buffer, in + i, this->round_key);
+        xor_with_iv(out + i, buffer, prev);
+        memcpy(prev, in + i, OP4_BL);
+    }
+}
+
+void OP4::ofb_xcrypt(u8 *out, const u8 *in,
+                                     size_t length, const u8 iv[OP4_NL])
+{
+    u8 feedback[OP4_BL]{0};
+    memcpy(feedback, iv, OP4_BL);
+
+    for (size_t i = 0; i < length; i += OP4_BL) {
+        cipher(feedback, this->round_key);
+        xor_with_iv(out + i, in + i, feedback);
+    }
+}
+
+void OP4::ctr_xcrypt(u8 *out, const u8 *in,
+                                    size_t length, const u8 nonce[OP4_NL],
+                                    size_t counter)
+{
+    u8 keystream[OP4_BL]{0x12, 0xb6, 0x36, 0x64};
+    u8 keystream_state[OP4_BL]{0};
+    memcpy(keystream + 4, nonce, OP4_NL);
+    PACK32_LE(keystream + 16, static_cast<u32>(counter));
+    PACK32_LE(keystream + 20, static_cast<u32>(counter >> 32));
+
+    for (size_t i = 0; i < length; i += OP4_BL) {
+        cipher(keystream_state, keystream, this->round_key);
+        xor_with_iv(out + i, in + i, keystream_state);
+
+        counter++;
+        PACK32_LE(keystream + 16, static_cast<u32>(counter));
+        PACK32_LE(keystream + 20, static_cast<u32>(counter >> 32));
     }
 }
