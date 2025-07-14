@@ -1,4 +1,3 @@
-```markdown
 # 🔐 密码算法仓库说明 | Cipher Algorithm Repository Overview
 
 本仓库收录了多种加密算法，包括：**AES**、**ChaCha20**、**OP4**、**FEA** 和 **SSC**。这些算法在设计上均考虑了安全性，但需要注意的是，本仓库仅包含加密部分，并不包含完整的认证机制，例如 **AES-GCM** 或 **ChaCha20-Poly1305**。
@@ -36,4 +35,3 @@ Be advised that algorithms under the `Research` directory are experimental desig
 - **Do not use them in production systems or to protect sensitive data**.
 
 ---
-```
