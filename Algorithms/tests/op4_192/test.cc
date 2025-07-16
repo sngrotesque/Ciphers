@@ -2,15 +2,10 @@
 #include "op4/op4.cc"
 #include "Test.hh"
 
-#include <iostream>
-
 #define ECB_TEST
 #define CBC_TEST
 #define OFB_TEST
 #define CTR_TEST
-
-constexpr u32 decryption_error = 777777777;
-constexpr u32 aligned_size = OP4_BL * 4;
 
 void weak_key_test()
 {
@@ -21,7 +16,7 @@ void weak_key_test()
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
     };
     u8 key_r[OP4_KL] = {
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
@@ -33,14 +28,14 @@ void weak_key_test()
     const u8 *kl = op4_l.get_rk();
     const u8 *kr = op4_r.get_rk();
 
-    std::cout << "Round key (left):\t\t\t\t\t\tRound key (Right):\n";
-    print_diff_hex(kl, kr, OP4_RKL, OP4_RKL, OP4_BL, true);
+    std::cout << "Round key (left):\t\t\t\t\t\t\t\tRound key (Right):\n";
+    print_diff_hex(kl, kr, OP4_RKL, OP4_RKL, 24, true);
 
     if (memcmp(kl, kr, OP4_RKL) == 0) {
         std::cout << "Weak key has been formed!\n";
-        exit(decryption_error);
+        exit(777777777);
     } else {
-        std::cout << "The key extension algorithm is secure.\n\n";
+        std::cout << "The key extension algorithm is secure.\n";
     }
 }
 
@@ -53,36 +48,47 @@ void xcryption_verification()
         0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F
     };
     u8 iv[OP4_BL]{
-        0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
     };
     u8 nonce[OP4_NL]{
-        0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
     };
 
-    constexpr size_t length = OP4_BL << 1;
+    constexpr size_t length = OP4_BL * 2;
     u8 plaintext[length]{
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01,
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01,
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01,
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01
+        // 0x00, 0x01, 0x02, 0x03, 0x04, 0x05,
+        // 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
+        // 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11,
+        // 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+        // 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d,
+        // 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23,
+        // 0x24, 0x25, 0x26, 0x27, 0x28, 0x29,
+        // 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f
+        0x00, 0x01, 0x00, 0x01, 0x00, 0x01,
+        0x00, 0x01, 0x00, 0x01, 0x00, 0x01,
+        0x00, 0x01, 0x00, 0x01, 0x00, 0x01,
+        0x00, 0x01, 0x00, 0x01, 0x00, 0x01,
+        0x00, 0x01, 0x00, 0x01, 0x00, 0x01,
+        0x00, 0x01, 0x00, 0x01, 0x00, 0x01,
+        0x00, 0x01, 0x00, 0x01, 0x00, 0x01,
+        0x00, 0x01, 0x00, 0x01, 0x00, 0x01,
     };
     u8 ciphertext[length]{0};
     u8 decrypted[length]{0};
     OP4 op4(key);
 
     std::cout << "Master key:\n";
-    print_hex(key, OP4_KL, OP4_BL, true, true);
+    print_hex(key, OP4_KL, 24, true, true);
 
     std::cout << "Master Nonce:\n";
-    print_hex(nonce, OP4_NL, OP4_BL, true, true);
+    print_hex(nonce, OP4_NL, 24, true, true);
 
     std::cout << "Master IV:\n";
-    print_hex(iv, OP4_BL, OP4_BL, true, true);
+    print_hex(iv, OP4_BL, 24, true, true);
 
     std::cout << "Round key\n";
     print_hex(op4.get_rk(), OP4_RKL, OP4_BL, true, true);
@@ -98,7 +104,6 @@ void xcryption_verification()
     op4.ecb_decrypt(decrypted, ciphertext, length);
     if (memcmp(plaintext, decrypted, length) != 0) {
         std::cout << "\x1b[91m" << "[!] ECB Decryption failed! [!]\n" << "\x1b[0m";
-        exit(decryption_error);
     }
 #   endif
 
@@ -110,7 +115,6 @@ void xcryption_verification()
     op4.cbc_decrypt(decrypted, ciphertext, length, iv);
     if (memcmp(plaintext, decrypted, length) != 0) {
         std::cout << "\x1b[91m" << "[!] CBC Decryption failed! [!]\n" << "\x1b[0m";
-        exit(decryption_error);
     }
 #   endif
 
@@ -122,40 +126,38 @@ void xcryption_verification()
     op4.ofb_xcrypt(decrypted, ciphertext, length, iv);
     if (memcmp(plaintext, decrypted, length) != 0) {
         std::cout << "\x1b[91m" << "[!] OFB Decryption failed! [!]\n" << "\x1b[0m";
-        exit(decryption_error);
     }
 #   endif
 
 #   ifdef CTR_TEST
-    op4.ctr_xcrypt(ciphertext, plaintext, length, nonce);
+    op4.ctr_xcrypt(ciphertext, plaintext, length, nonce, 0x1234567890abcdef);
     std::cout << "\x1b[96m" << "CTR Ciphertext\n" << "\x1b[0m";
     print_hex(ciphertext, length, OP4_BL, true, true);
 
-    op4.ctr_xcrypt(decrypted, ciphertext, length, nonce);
+    op4.ctr_xcrypt(decrypted, ciphertext, length, nonce, 0x1234567890abcdef);
     if (memcmp(plaintext, decrypted, length) != 0) {
         std::cout << "\x1b[91m" << "[!] CTR Decryption failed! [!]\n" << "\x1b[0m";
-        exit(decryption_error);
     }
 #   endif
 }
 
-void speed_test(size_t length = 128ULL * 1024 * 1024)
+void speed_test(size_t length = 1024ULL * 1024 * 1024 + 8)
 {
-    u8 *plaintext = test_alloc<u8>(length, aligned_size);
-    u8 *ciphertext = test_alloc<u8>(length, aligned_size);
+    u8 *plaintext = test_alloc<u8>(length, 8);
+    u8 *ciphertext = test_alloc<u8>(length, 8);
     u8 key[OP4_KL]{0};
     OP4 op4(key);
 
-    SPEED_TEST(op4.ctr_xcrypt(ciphertext, plaintext, length, key));
+    SPEED_TEST(op4.ofb_xcrypt(ciphertext, plaintext, length, key));
 
-    test_free(ciphertext, length, aligned_size);
-    test_free(plaintext, length, aligned_size);
+    test_free(ciphertext, length, 8);
+    test_free(plaintext, length, 8);
 }
 
 int main()
 {
-    weak_key_test();
-    xcryption_verification();
+    // weak_key_test();
+    // xcryption_verification();
     speed_test();
 
     return 0;

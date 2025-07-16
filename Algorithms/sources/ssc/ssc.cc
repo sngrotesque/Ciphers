@@ -1,42 +1,6 @@
 #include "ssc/ssc.hh"
 
-#ifdef _MSC_VER
-#   define ROTL32(x, n) _rotl(x, n)
-#else
-#   define ROTL32(x, n) rotl32(x, n)
-static inline u32 rotl32(u32 x, u32 n)
-{
-    return (x << n) | (x >> (32 - n));
-}
-#endif
-
 #define U32C(x) x##U
-
-static inline u32 load32_le(const u8 dst[4])
-{
-    u32 w = 0;
-#   if WUK_IS_LITTLE_ENDIAN
-    memcpy(&w, dst, sizeof w);
-#   else
-    w =  (u32) dst[0];
-    w |= (u32) dst[1] <<  8;
-    w |= (u32) dst[2] << 16;
-    w |= (u32) dst[3] << 24;
-#   endif
-    return w;
-}
-
-static inline void store32_le(u8 dst[4], u32 w)
-{
-#   if WUK_IS_LITTLE_ENDIAN
-    memcpy(dst, &w, sizeof w);
-#   else
-    dst[0] = (u8) w; w >>= 8;
-    dst[1] = (u8) w; w >>= 8;
-    dst[2] = (u8) w; w >>= 8;
-    dst[3] = (u8) w;
-#   endif
-}
 
 static inline void rotl128_add(u32 &a, u32 &b, u32 &c, u32 &d, u32 shift)
 {
@@ -70,26 +34,26 @@ WukSSC::WukSSC(const u8 key[WukSSC_KEYLEN], const u8 nonce[WukSSC_NONCELEN], u32
 void WukSSC::init(const u8 key[WukSSC_KEYLEN], const u8 nonce[WukSSC_NONCELEN], u32 counter)
 {
     u8 count[4]{};
-    store32_le(count, counter);
+    pack32le(count, counter);
 
-    this->state[0]  = load32_le(count);
-    this->state[1]  = load32_le(nonce);
-    this->state[2]  = load32_le(nonce + 4);
-    this->state[3]  = load32_le(nonce + 8);
+    this->state[0]  = load32le(count);
+    this->state[1]  = load32le(nonce);
+    this->state[2]  = load32le(nonce + 4);
+    this->state[3]  = load32le(nonce + 8);
 
     this->state[4]  = U32C(0xf6078754);
     this->state[5]  = U32C(0x35024727);
     this->state[6]  = U32C(0x07963435);
     this->state[7]  = U32C(0xe2275686);
 
-    this->state[8]  = load32_le(key);
-    this->state[9]  = load32_le(key + 4);
-    this->state[10] = load32_le(key + 8);
-    this->state[11] = load32_le(key + 12);
-    this->state[12] = load32_le(key + 16);
-    this->state[13] = load32_le(key + 20);
-    this->state[14] = load32_le(key + 24);
-    this->state[15] = load32_le(key + 28);
+    this->state[8]  = load32le(key);
+    this->state[9]  = load32le(key + 4);
+    this->state[10] = load32le(key + 8);
+    this->state[11] = load32le(key + 12);
+    this->state[12] = load32le(key + 16);
+    this->state[13] = load32le(key + 20);
+    this->state[14] = load32le(key + 24);
+    this->state[15] = load32le(key + 28);
 }
 
 void WukSSC::xcrypt(u8 *ciphertext, const u8 *plaintext, size_t length)

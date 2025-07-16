@@ -40,58 +40,6 @@ static constexpr u8 rsbox[256] = {
     0xf8, 0xb0, 0x3c, 0xa8, 0xdd, 0x02, 0xfc, 0x5f, 0xf5, 0x84, 0xf1, 0xec, 0x67, 0x80, 0x4f, 0xee
 };
 
-static inline u32 load32_be(const u8 dst[4])
-{
-    return (static_cast<u32>(dst[0]) << 24) |
-           (static_cast<u32>(dst[1]) << 16) |
-           (static_cast<u32>(dst[2]) << 8)  |
-           (static_cast<u32>(dst[3]));
-}
-
-static inline void store32_be(u8 dst[4], u32 value)
-{
-    dst[0] = static_cast<u8>(value >> 24);
-    dst[1] = static_cast<u8>(value >> 16);
-    dst[2] = static_cast<u8>(value >> 8);
-    dst[3] = static_cast<u8>(value);
-}
-
-static inline u32 load32_be(u8 &b1, u8 &b2, u8 &b3, u8 &b4)
-{
-    return (static_cast<u32>(b1) << 24) |
-           (static_cast<u32>(b2) << 16) |
-           (static_cast<u32>(b3) << 8)  |
-           (static_cast<u32>(b4));
-}
-
-static inline void store32_be(u8 &b1, u8 &b2, u8 &b3, u8 &b4, u32 &value)
-{
-    b1 = static_cast<u8>(value >> 24);
-    b2 = static_cast<u8>(value >> 16);
-    b3 = static_cast<u8>(value >> 8);
-    b4 = static_cast<u8>(value);
-}
-
-static inline u8 ROTL8(u8 x, u32 n)
-{
-    return (x >> (8 - n)) | (x << n);
-}
-
-static inline u8 ROTR8(u8 x, u32 n)
-{
-    return (x << (8 - n)) | (x >> n);
-}
-
-static inline u32 ROTL32(u32 x, u32 n)
-{
-    return (x >> (32 - n)) | (x << n);
-}
-
-static inline u32 ROTR32(u32 x, u32 n)
-{
-    return (x << (32 - n)) | (x >> n);
-}
-
 static inline void sub_bytes(u8 block[WukFEA_BL])
 {
     for (u32 i = 0; i < WukFEA_BL; i += 4) {
@@ -120,20 +68,20 @@ shift_rows( u8 &b0,  u8 &b1,  u8 &b2,  u8 &b3,
 {
     u32 v0, v1, v2, v3;
 
-    v0 = load32_be(b0, b1, b2, b3);
-    v1 = load32_be(b4, b5, b6, b7);
-    v2 = load32_be(b8, b9, b10, b11);
-    v3 = load32_be(b12, b13, b14, b15);
+    v0 = load32be(b0, b1, b2, b3);
+    v1 = load32be(b4, b5, b6, b7);
+    v2 = load32be(b8, b9, b10, b11);
+    v3 = load32be(b12, b13, b14, b15);
 
-    v0 = ROTL32(v0 + ROTL32(v1, 13) + v2, 11);
-    v1 = ROTL32(v1 + ROTL32(v2, 7)  + v3, 15);
-    v2 = ROTL32(v2 + ROTL32(v3, 19) + v0, 23);
-    v3 = ROTL32(v3 + ROTL32(v0, 5)  + v1, 7);
+    v0 = rotl32(v0 + rotl32(v1, 13) + v2, 11);
+    v1 = rotl32(v1 + rotl32(v2, 7)  + v3, 15);
+    v2 = rotl32(v2 + rotl32(v3, 19) + v0, 23);
+    v3 = rotl32(v3 + rotl32(v0, 5)  + v1, 7);
 
-    store32_be(b0,  b1,  b2,  b3,  v0);
-    store32_be(b4,  b5,  b6,  b7,  v1);
-    store32_be(b8,  b9,  b10, b11, v2);
-    store32_be(b12, b13, b14, b15, v3);
+    pack32be(b0,  b1,  b2,  b3,  v0);
+    pack32be(b4,  b5,  b6,  b7,  v1);
+    pack32be(b8,  b9,  b10, b11, v2);
+    pack32be(b12, b13, b14, b15, v3);
 }
 
 static inline void
@@ -144,29 +92,29 @@ inv_shift_rows( u8 &b0,  u8 &b1,  u8 &b2,  u8 &b3,
 {
     u32 v0, v1, v2, v3;
 
-    v0 = load32_be(b0, b1, b2, b3);
-    v1 = load32_be(b4, b5, b6, b7);
-    v2 = load32_be(b8, b9, b10, b11);
-    v3 = load32_be(b12, b13, b14, b15);
+    v0 = load32be(b0, b1, b2, b3);
+    v1 = load32be(b4, b5, b6, b7);
+    v2 = load32be(b8, b9, b10, b11);
+    v3 = load32be(b12, b13, b14, b15);
 
-    v3 = ROTR32(v3, 7)  - ROTL32(v0, 5)  - v1;
-    v2 = ROTR32(v2, 23) - ROTL32(v3, 19) - v0;
-    v1 = ROTR32(v1, 15) - ROTL32(v2, 7)  - v3;
-    v0 = ROTR32(v0, 11) - ROTL32(v1, 13) - v2;
+    v3 = rotr32(v3, 7)  - rotl32(v0, 5)  - v1;
+    v2 = rotr32(v2, 23) - rotl32(v3, 19) - v0;
+    v1 = rotr32(v1, 15) - rotl32(v2, 7)  - v3;
+    v0 = rotr32(v0, 11) - rotl32(v1, 13) - v2;
 
-    store32_be(b0,  b1,  b2,  b3,  v0);
-    store32_be(b4,  b5,  b6,  b7,  v1);
-    store32_be(b8,  b9,  b10, b11, v2);
-    store32_be(b12, b13, b14, b15, v3);
+    pack32be(b0,  b1,  b2,  b3,  v0);
+    pack32be(b4,  b5,  b6,  b7,  v1);
+    pack32be(b8,  b9,  b10, b11, v2);
+    pack32be(b12, b13, b14, b15, v3);
 }
 
 static inline void Key_column_mixing(u8 k[WukFEA_BL])
 {
     for (u32 i = 0; i < WukFEA_BL; i += 4) {
-        k[i    ] += ROTL8(k[0] ^ k[4] ^ k[8]  ^ k[12], 3);
-        k[i + 1] += ROTL8(k[1] ^ k[5] ^ k[9]  ^ k[13], 1);
-        k[i + 2] += ROTL8(k[2] ^ k[6] ^ k[10] ^ k[14], 5);
-        k[i + 3] += ROTL8(k[3] ^ k[7] ^ k[11] ^ k[15], 7);
+        k[i    ] += rotl8(k[0] ^ k[4] ^ k[8]  ^ k[12], 3);
+        k[i + 1] += rotl8(k[1] ^ k[5] ^ k[9]  ^ k[13], 1);
+        k[i + 2] += rotl8(k[2] ^ k[6] ^ k[10] ^ k[14], 5);
+        k[i + 3] += rotl8(k[3] ^ k[7] ^ k[11] ^ k[15], 7);
     }
 }
 
@@ -375,13 +323,13 @@ void FEA::ctr_xcrypt(u8 *buffer, size_t length, const u8 nonce[WukFEA_NONCELEN],
     }
     u8 keystream[WukFEA_BL]{};
     memcpy(keystream, nonce, WukFEA_NONCELEN);
-    store32_be(keystream + WukFEA_NONCELEN, counter);
+    pack32be(keystream + WukFEA_NONCELEN, counter);
 
     for (size_t i = 0; i < length; i += WukFEA_BL) {
         cipher(keystream, this->roundKey);
         for (u32 j = 0; j < WukFEA_BL && i + j < length; ++j) {
             buffer[i + j] ^= keystream[j];
         }
-        store32_be(keystream + WukFEA_NONCELEN, counter++);
+        pack32be(keystream + WukFEA_NONCELEN, counter++);
     }
 }

@@ -42,48 +42,6 @@ static const u8 Rcon[11] = {
     0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36
 };
 
-static inline u32 ROTL32(const u32 &x, const u32 &&n)
-{
-    return (x << n) | (x >> (32 - n));
-}
-
-static inline u32 ROTR32(const u32 &x, const u32 &&n)
-{
-    return (x >> n) | (x << (32 - n));
-}
-
-static inline u32 LOAD32(const u8 dst[4])
-{
-    return static_cast<u32>(dst[0]) << 24 |
-           static_cast<u32>(dst[1]) << 16 |
-           static_cast<u32>(dst[2]) <<  8 |
-           static_cast<u32>(dst[3]);
-}
-
-static inline void PACK32(u8 dst[4], const u32 &w)
-{
-    dst[0] = w >> 24;
-    dst[1] = w >> 16;
-    dst[2] = w >> 8;
-    dst[3] = w;
-}
-
-static inline u32 LOAD32(const u8 &a, const u8 &b, const u8 &c, const u8 &d)
-{
-    return static_cast<u32>(a) << 24 |
-           static_cast<u32>(b) << 16 |
-           static_cast<u32>(c) <<  8 |
-           static_cast<u32>(d);
-}
-
-static inline void PACK32(u8 &a, u8 &b, u8 &c, u8 &d, const u32 &w)
-{
-    a = w >> 24;
-    b = w >> 16;
-    c = w >> 8;
-    d = w;
-}
-
 static inline void sub_bytes(u8 b[AESXXX_BL])
 {
     for (u32 i = 0; i < AESXXX_BL; ++i) {
@@ -100,32 +58,32 @@ static inline void inv_sub_bytes(u8 b[AESXXX_BL])
 
 static inline void shift_rows(u8 b[AESXXX_BL])
 {
-    u32 r2 = LOAD32(*(b + 1), *(b + 5), *(b + 9),  *(b + 13));
-    u32 r3 = LOAD32(*(b + 2), *(b + 6), *(b + 10), *(b + 14));
-    u32 r4 = LOAD32(*(b + 3), *(b + 7), *(b + 11), *(b + 15));
+    u32 r2 = load32be(*(b + 1), *(b + 5), *(b + 9),  *(b + 13));
+    u32 r3 = load32be(*(b + 2), *(b + 6), *(b + 10), *(b + 14));
+    u32 r4 = load32be(*(b + 3), *(b + 7), *(b + 11), *(b + 15));
 
-    r2 = ROTL32(r2, 8);
-    r3 = ROTL32(r3, 16);
-    r4 = ROTL32(r4, 24);
+    r2 = rotl32(r2, 8);
+    r3 = rotl32(r3, 16);
+    r4 = rotl32(r4, 24);
 
-    PACK32(*(b + 1), *(b + 5), *(b + 9),  *(b + 13), r2);
-    PACK32(*(b + 2), *(b + 6), *(b + 10), *(b + 14), r3);
-    PACK32(*(b + 3), *(b + 7), *(b + 11), *(b + 15), r4);
+    pack32be(*(b + 1), *(b + 5), *(b + 9),  *(b + 13), r2);
+    pack32be(*(b + 2), *(b + 6), *(b + 10), *(b + 14), r3);
+    pack32be(*(b + 3), *(b + 7), *(b + 11), *(b + 15), r4);
 }
 
 static inline void inv_shift_rows(u8 b[AESXXX_BL])
 {
-    u32 r2 = LOAD32(*(b + 1), *(b + 5), *(b + 9),  *(b + 13));
-    u32 r3 = LOAD32(*(b + 2), *(b + 6), *(b + 10), *(b + 14));
-    u32 r4 = LOAD32(*(b + 3), *(b + 7), *(b + 11), *(b + 15));
+    u32 r2 = load32be(*(b + 1), *(b + 5), *(b + 9),  *(b + 13));
+    u32 r3 = load32be(*(b + 2), *(b + 6), *(b + 10), *(b + 14));
+    u32 r4 = load32be(*(b + 3), *(b + 7), *(b + 11), *(b + 15));
 
-    r2 = ROTR32(r2, 8);
-    r3 = ROTR32(r3, 16);
-    r4 = ROTR32(r4, 24);
+    r2 = rotr32(r2, 8);
+    r3 = rotr32(r3, 16);
+    r4 = rotr32(r4, 24);
 
-    PACK32(*(b + 1), *(b + 5), *(b + 9),  *(b + 13), r2);
-    PACK32(*(b + 2), *(b + 6), *(b + 10), *(b + 14), r3);
-    PACK32(*(b + 3), *(b + 7), *(b + 11), *(b + 15), r4);
+    pack32be(*(b + 1), *(b + 5), *(b + 9),  *(b + 13), r2);
+    pack32be(*(b + 2), *(b + 6), *(b + 10), *(b + 14), r3);
+    pack32be(*(b + 3), *(b + 7), *(b + 11), *(b + 15), r4);
 }
 
 static inline u8 xtime(const u8 &x)
@@ -237,8 +195,8 @@ void AES::key_expansion(const u8 *key)
         // 每 nk 个 word 做一次特殊变换
         if (i % nk == 0) {
             // RotWord + SubWord
-            const u32 w = ROTL32(LOAD32(temp), 8);
-            PACK32(temp, w);
+            const u32 w = rotl32(load32be(temp), 8);
+            pack32be(temp, w);
 
             for (u8 &b : temp) {
                 b = sbox[b];

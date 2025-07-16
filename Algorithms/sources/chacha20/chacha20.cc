@@ -8,28 +8,6 @@
     a += b; d ^= a; d = rotl32(d, 8);  \
     c += d; b ^= c; b = rotl32(b, 7);
 
-static inline u32 load32_le(const u8 src[4])
-{
-    u32 w = (u32) src[0];
-    w |= (u32) src[1] <<  8;
-    w |= (u32) src[2] << 16;
-    w |= (u32) src[3] << 24;
-    return w;
-}
-
-static inline void store32_le(u8 dst[4], u32 w)
-{
-    dst[0] = (u8) w; w >>= 8;
-    dst[1] = (u8) w; w >>= 8;
-    dst[2] = (u8) w; w >>= 8;
-    dst[3] = (u8) w;
-}
-
-static inline u32 rotl32(u32 x, u32 n)
-{
-    return (x << n) | (x >> (32 - n));
-}
-
 static inline void keystream_add_state(u32 ks[16], const u32 state[16])
 {
     ks[0]  += state[0];  ks[1]  += state[1];
@@ -45,7 +23,7 @@ static inline void keystream_add_state(u32 ks[16], const u32 state[16])
 ChaCha20::ChaCha20(const u8 k[32], const u8 n[12], u32 counter)
 {
     u8 b[4]{0};
-    store32_le(b, counter);
+    pack32le(b, counter);
 
     // constants
     this->state[0]  = U32C(0x61707865);
@@ -54,20 +32,20 @@ ChaCha20::ChaCha20(const u8 k[32], const u8 n[12], u32 counter)
     this->state[3]  = U32C(0x6b206574);
 
     // key
-    this->state[4]  = load32_le(k + 0);
-    this->state[5]  = load32_le(k + 4);
-    this->state[6]  = load32_le(k + 8);
-    this->state[7]  = load32_le(k + 12);
-    this->state[8]  = load32_le(k + 16);
-    this->state[9]  = load32_le(k + 20);
-    this->state[10] = load32_le(k + 24);
-    this->state[11] = load32_le(k + 28);
+    this->state[4]  = load32le(k + 0);
+    this->state[5]  = load32le(k + 4);
+    this->state[6]  = load32le(k + 8);
+    this->state[7]  = load32le(k + 12);
+    this->state[8]  = load32le(k + 16);
+    this->state[9]  = load32le(k + 20);
+    this->state[10] = load32le(k + 24);
+    this->state[11] = load32le(k + 28);
 
     // counter & nonce
-    this->state[12] = load32_le(b);
-    this->state[13] = load32_le(n + 0);
-    this->state[14] = load32_le(n + 4);
-    this->state[15] = load32_le(n + 8);
+    this->state[12] = load32le(b);
+    this->state[13] = load32le(n + 0);
+    this->state[14] = load32le(n + 4);
+    this->state[15] = load32le(n + 8);
 }
 
 void ChaCha20::crypto_stream(u8 *c, const u8 *m, size_t mlen)

@@ -1,9 +1,5 @@
 #pragma once
-#include <cstdint>
-#include <cstring>
-#include <cstdlib>
-
-#include <immintrin.h>
+#include "Common.hh"
 
 typedef uint64_t u64;
 typedef uint32_t u32;
