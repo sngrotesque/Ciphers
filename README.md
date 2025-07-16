@@ -11,13 +11,13 @@ This repository contains a collection of encryption algorithms, including **AES*
 你可以放心地使用本仓库中的任意一种主算法，它们能够为你的数据提供充分的保护。
 
 - **AES** 是依据官方标准实现；
-- **ChaCha20** 完全遵循 [RFC 9439](https://www.rfc-editor.org/rfc/rfc9439)；
+- **ChaCha20** 完全遵循 [RFC 8439](https://www.rfc-editor.org/rfc/rfc8439)；
 - 然而由于它们均为纯软件实现，其**性能可能不尽如人意**，在高性能场景下可能存在瓶颈。
 
 Any of the core algorithms in this repository can be safely used — they all offer solid data protection.
 
 - **AES** follows official standards.
-- **ChaCha20** complies fully with [RFC 9439](https://www.rfc-editor.org/rfc/rfc9439).
+- **ChaCha20** complies fully with [RFC 8439](https://www.rfc-editor.org/rfc/rfc8439).
 - That said, as these are purely software-based implementations, their **performance may not be optimal** for high-throughput or time-sensitive scenarios.
 
 ---
