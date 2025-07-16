@@ -24,7 +24,7 @@ Any of the core algorithms in this repository can be safely used — they all of
 
 ## 🚫 Research 目录算法 | Algorithms in the Research Directory
 
-请务必注意，`Research` 目录中的算法属于早期探索性设计（例如 SN-Grotesque 阶段的实验性方案），**并不被认为具备足够的安全性**。
+请务必注意，`Research` 目录中的算法属于早期探索性设计，**并不被认为具备足够的安全性**。
 
 - 这些算法仅供研究学习使用；
 - **请不要将它们用于生产环境或任何实际数据保护任务**。
@@ -33,5 +33,3 @@ Be advised that algorithms under the `Research` directory are experimental desig
 
 - These are provided strictly for **educational and research purposes**.
 - **Do not use them in production systems or to protect sensitive data**.
-
----
