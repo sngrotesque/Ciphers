@@ -1,5 +1,4 @@
 #include "op4/op4.hh"
-#include "op4/op4.cc"
 #include "Test.hh"
 
 #include <iostream>
@@ -131,6 +130,7 @@ void xcryption_verification()
     std::cout << "\x1b[96m" << "CTR Ciphertext\n" << "\x1b[0m";
     print_hex(ciphertext, length, OP4_BL, true, true);
 
+    op4.set_counter(0);
     op4.ctr_xcrypt(decrypted, ciphertext, length, nonce);
     if (memcmp(plaintext, decrypted, length) != 0) {
         std::cout << "\x1b[91m" << "[!] CTR Decryption failed! [!]\n" << "\x1b[0m";
@@ -144,9 +144,10 @@ void speed_test(size_t length = 128ULL * 1024 * 1024)
     u8 *plaintext = test_alloc<u8>(length, aligned_size);
     u8 *ciphertext = test_alloc<u8>(length, aligned_size);
     u8 key[OP4_KL]{0};
+    u8 iv[OP4_BL]{0};
     OP4 op4(key);
 
-    SPEED_TEST(op4.ctr_xcrypt(ciphertext, plaintext, length, key));
+    SPEED_TEST(op4.ecb_encrypt(ciphertext, plaintext, length));
 
     test_free(ciphertext, length, aligned_size);
     test_free(plaintext, length, aligned_size);

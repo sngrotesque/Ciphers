@@ -11,6 +11,7 @@ constexpr u32 OP4_RKL = OP4_BL * OP4_NR; // Length of the round key
 class OP4 {
 private:
     alignas(16) u8 round_key[OP4_RKL]{0};
+    u32 counter = 0U;
 
 public:
     OP4() = default;
@@ -25,12 +26,17 @@ public:
                     size_t length, const u8 iv[OP4_BL]);
 
     void ofb_xcrypt(u8 *out, const u8 *in,
-                    size_t length, const u8 iv[OP4_NL]);
+                    size_t length, const u8 iv[OP4_BL]);
 
     void ctr_xcrypt(u8 *out, const u8 *in, size_t length,
-            const u8 nonce[OP4_NL], u32 counter = 0);
+                    const u8 nonce[OP4_NL]);
 
 public:
+    void set_counter(u32 counter) noexcept
+    {
+        this->counter = counter;
+    }
+
     const u8 *const get_rk() const noexcept
     {
         return this->round_key;

@@ -126,13 +126,13 @@ def main(verbose: bool = True):
 
     # 额外源文件
     compiler.add_args(
-        'sources/aes/aes.cc',
-        'sources/caesar/caesar.cc',
-        'sources/chacha20/chacha20.cc',
-        'sources/fea/fea.cc',
-        # 'sources/op4/op4.cc',
-        # 'sources/op4_128/op4.cc',
-        'sources/ssc/ssc.cc'
+        # 'sources/aes/aes.cc',
+        # 'sources/caesar/caesar.cc',
+        # 'sources/chacha20/chacha20.cc',
+        # 'sources/fea/fea.cc',
+        'sources/op4/op4.cc',
+        # 'sources/op4_192/op4.cc',
+        # 'sources/ssc/ssc.cc'
     )
 
     start = time.time()
