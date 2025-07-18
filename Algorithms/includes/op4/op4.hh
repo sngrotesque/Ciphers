@@ -20,16 +20,16 @@ public:
     void ecb_encrypt(u8 *out, const u8 *in, size_t length);
     void ecb_decrypt(u8 *out, const u8 *in, size_t length);
 
-    void cbc_encrypt(u8 *out, const u8 *in,
-                    size_t length, const u8 iv[OP4_BL]);
-    void cbc_decrypt(u8 *out, const u8 *in,
-                    size_t length, const u8 iv[OP4_BL]);
+    void cbc_encrypt(u8 *out, const u8 *in, size_t length,
+               const u8 iv[OP4_BL]);
+    void cbc_decrypt(u8 *out, const u8 *in, size_t length,
+               const u8 iv[OP4_BL]);
 
-    void ofb_xcrypt(u8 *out, const u8 *in,
-                    size_t length, const u8 iv[OP4_BL]);
+    void ofb_stream(u8 *out, const u8 *in, size_t length,
+              const u8 iv[OP4_BL]);
 
-    void ctr_xcrypt(u8 *out, const u8 *in, size_t length,
-                    const u8 nonce[OP4_NL]);
+    void ctr_stream(u8 *out, const u8 *in, size_t length,
+              const u8 nonce[OP4_NL]);
 
 public:
     void set_counter(u32 counter) noexcept
@@ -37,7 +37,7 @@ public:
         this->counter = counter;
     }
 
-    const u8 *const get_rk() const noexcept
+    const u8 *get_rk() const noexcept
     {
         return this->round_key;
     }

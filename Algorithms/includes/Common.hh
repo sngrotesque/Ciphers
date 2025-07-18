@@ -6,9 +6,6 @@
 
 #ifdef SIMD_SUPPORT
 #   include <immintrin.h>
-#   if defined(__MINGW32__) || defined(__GNUC__)
-#       pragma GCC target("sse2,sse4")
-#   endif
 #endif
 
 #ifdef INCLUDE_CSTDBOOL

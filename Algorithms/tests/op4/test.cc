@@ -114,11 +114,11 @@ void xcryption_verification()
 #   endif
 
 #   ifdef OFB_TEST
-    op4.ofb_xcrypt(ciphertext, plaintext, length, iv);
+    op4.ofb_stream(ciphertext, plaintext, length, iv);
     std::cout << "\x1b[95m" << "OFB Ciphertext\n" << "\x1b[0m";
     print_hex(ciphertext, length, OP4_BL, true, true);
 
-    op4.ofb_xcrypt(decrypted, ciphertext, length, iv);
+    op4.ofb_stream(decrypted, ciphertext, length, iv);
     if (memcmp(plaintext, decrypted, length) != 0) {
         std::cout << "\x1b[91m" << "[!] OFB Decryption failed! [!]\n" << "\x1b[0m";
         exit(decryption_error);
@@ -126,12 +126,12 @@ void xcryption_verification()
 #   endif
 
 #   ifdef CTR_TEST
-    op4.ctr_xcrypt(ciphertext, plaintext, length, nonce);
+    op4.ctr_stream(ciphertext, plaintext, length, nonce);
     std::cout << "\x1b[96m" << "CTR Ciphertext\n" << "\x1b[0m";
     print_hex(ciphertext, length, OP4_BL, true, true);
 
     op4.set_counter(0);
-    op4.ctr_xcrypt(decrypted, ciphertext, length, nonce);
+    op4.ctr_stream(decrypted, ciphertext, length, nonce);
     if (memcmp(plaintext, decrypted, length) != 0) {
         std::cout << "\x1b[91m" << "[!] CTR Decryption failed! [!]\n" << "\x1b[0m";
         exit(decryption_error);
@@ -147,7 +147,7 @@ void speed_test(size_t length = 128ULL * 1024 * 1024)
     u8 iv[OP4_BL]{0};
     OP4 op4(key);
 
-    SPEED_TEST(op4.ecb_encrypt(ciphertext, plaintext, length));
+    SPEED_TEST(op4.ctr_stream(ciphertext, plaintext, length, iv));
 
     test_free(ciphertext, length, aligned_size);
     test_free(plaintext, length, aligned_size);

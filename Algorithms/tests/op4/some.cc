@@ -9,63 +9,38 @@ constexpr u32 decryption_error = 777777777;
 
 void some_testing()
 {
-    u8 *key = (u8 *)"abcdef0123456789abcdef0123456789";
+    u8 *key = (u8 *)"Abcdef0123456789abcdef0123456789";
     u8 *nonce = (u8 *)"abcdef012345";
     u8 *iv = (u8 *)"abcdef0123456789";
 
     OP4 op4(key);
 
     const char plaintext[] = {
-        "Hello, world.\n"
+        "GET / HTTP/1.1\r\n"
+        "Accept: */*\r\n"
+        "User-Agent: Android\r\n\r\n"
     };
     size_t length = strlen(plaintext);
-    u8 *ciphertext = new u8[length];
+    u8 *ciphertext = test_alloc<u8>(length, 16);
+    if (!ciphertext) {
+        std::cerr << "new error." << std::endl;
+        return;
+    }
 
-    op4.ofb_xcrypt(ciphertext, (u8 *)plaintext, length, iv);
+    op4.ctr_stream(ciphertext, (u8 *)plaintext, length, iv);
 
     printf("Plaintext:\t\t\t\t\t\tCiphertext:\n");
     print_diff_hex((u8 *)plaintext, ciphertext, length, length, 16, true);
 
-    delete[] ciphertext;
-}
-
-void keystream_reuse_test()
-{
-    u8 *key = (u8 *)"abcdef0123456789abcdef0123456789";
-    u8 *nonce = (u8 *)"abcdef012345";
-
-    OP4 op4(key);
-
-    size_t length = TEST_MB(1);
-    u8 *plaintext = new u8[length];
-    u8 *ciphertext = new u8[length];
-
-    memset(plaintext, 0x00, length);
-    memset(ciphertext, 0x00, length);
-
-    for (size_t i = 0; i < length; i += 4096) {
-        op4.ctr_xcrypt(ciphertext + i, plaintext + i, 4096, nonce);
-    }
-
-    for (size_t i = 16; i < length; i += 16) {
-        int res = memcmp(ciphertext, ciphertext + i, 16);
-        if (res == 0) {
-            delete[] ciphertext;
-            delete[] plaintext;
-            std::cerr << "Position during repetition: " << i << std::endl;
-            throw std::runtime_error("A key stream reuse attack has been triggered.");
-        }
-    }
-    std::cout << "The encryption has been successfully completed." << std::endl;
-
-    delete[] ciphertext;
-    delete[] plaintext;
+    test_free<u8>(ciphertext, length, 16);
 }
 
 int main()
 {
     try {
-        keystream_reuse_test();
+        some_testing();
+    } catch (std::bad_alloc &e) {
+        std::cerr << e.what() << std::endl;
     } catch (std::exception &e) {
         std::cerr << e.what() << std::endl;
     }
